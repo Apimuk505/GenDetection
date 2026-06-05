@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IsthisAI — Detect AI-Generated Images</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal-dark: #0a1f1e;
+      --teal-mid: #0d3330;
+      --teal-bright: #1a7a6e;
+      --teal-glow: #2dd4bf;
+      --green-glow: #4ade80;
+      --text-primary: #f0fdf9;
+      --text-secondary: #94a3b8;
+      --border: rgba(45, 212, 191, 0.15);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--teal-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background aurora ── */
+    .bg-aurora {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .bg-aurora::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 900px;
+      background: radial-gradient(ellipse at center,
+        rgba(45, 212, 191, 0.35) 0%,
+        rgba(16, 185, 129, 0.20) 35%,
+        rgba(6, 78, 59, 0.10) 60%,
+        transparent 80%
+      );
+      border-radius: 50%;
+      filter: blur(60px);
+    }
+    .bg-aurora::after {
+      content: '';
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 500px;
+      background: radial-gradient(ellipse at center,
+        rgba(15, 60, 55, 0.9) 0%,
+        rgba(10, 31, 30, 0.6) 60%,
+        transparent 80%
+      );
+      border-radius: 50%;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 48px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--teal-glow), var(--green-glow));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 60px 24px 0;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(45, 212, 191, 0.1);
+      border: 1px solid rgba(45, 212, 191, 0.25);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: var(--teal-glow);
+      margin-bottom: 28px;
+      letter-spacing: 0.3px;
+    }
+    .hero-badge span {
+      width: 6px; height: 6px;
+      background: var(--teal-glow);
+      border-radius: 50%;
+      display: block;
+    }
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      font-weight: 300;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 20px;
+    }
+    h1 em {
+      font-style: normal;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 30%, var(--teal-glow));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      max-width: 460px;
+      margin: 0 auto 48px;
+      line-height: 1.6;
+    }
+
+    /* ── Upload card ── */
+    .card-wrap {
+      position: relative;
+      z-index: 10;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 24px 100px;
+    }
+    .card {
+      background: rgba(10, 31, 30, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 0 0 1px rgba(45,212,191,0.05), 0 32px 64px rgba(0,0,0,0.5);
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed rgba(45, 212, 191, 0.3);
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s;
+      position: relative;
+      overflow: hidden;
+      background: rgba(45, 212, 191, 0.03);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: rgba(45, 212, 191, 0.6);
+      background: rgba(45, 212, 191, 0.07);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .drop-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px;
+      background: rgba(45, 212, 191, 0.1);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .drop-icon svg { width: 26px; height: 26px; stroke: var(--teal-glow); }
+    .drop-text { font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
+    .drop-sub { font-size: 0.82rem; color: var(--text-secondary); }
+
+    /* Preview */
+    .preview-wrap {
+      display: none;
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+    }
+    .preview-wrap.visible { display: block; }
+    .preview-img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: cover;
+      display: block;
+      filter: blur(14px) brightness(0.65);
+      transform: scale(1.06);
+      transition: filter 0.6s ease, transform 0.6s ease;
+    }
+    .preview-img.clear {
+      filter: none;
+      transform: scale(1);
+    }
+    .preview-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .preview-label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .change-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(10,31,30,0.8);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      padding: 5px 12px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: color 0.2s;
+    }
+    .change-btn:hover { color: var(--text-primary); }
+
+    /* Result ring */
+    .result-ring {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .result-ring.visible { display: flex; }
+    .ring-svg { width: 110px; height: 110px; transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 8; }
+    .ring-fill {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 282.6;
+      stroke-dashoffset: 282.6;
+      transition: stroke-dashoffset 1.3s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s;
+    }
+    .ring-center {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.1;
+    }
+    .ring-pct { font-size: 1.8rem; font-weight: 700; color: #fff; }
+    .ring-pct-unit { font-size: 0.7rem; color: rgba(255,255,255,0.45); }
+    .ring-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-verdict { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.3px; }
+    .result-verdict.ai   { color: #f87171; }
+    .result-verdict.real { color: var(--teal-glow); }
+    .result-sub-text { font-size: 0.78rem; color: rgba(255,255,255,0.5); }
+
+    /* Analyse button */
+    .btn-analyse {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--teal-bright), var(--teal-glow));
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-analyse:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .btn-analyse:active:not(:disabled) { transform: translateY(0); }
+    .btn-analyse:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-analyse .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    .btn-analyse.loading .btn-text { display: none; }
+    .btn-analyse.loading .spinner  { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error-box {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.25);
+      border-radius: 10px;
+      font-size: 0.83rem;
+      color: #fca5a5;
+    }
+    .error-box.visible { display: block; }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 24px;
+      font-size: 0.78rem;
+      color: rgba(148,163,184,0.35);
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 20px 24px; }
+      .nav-links { display: none; }
+      .card { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-aurora"></div>
+
+<!-- Nav -->
+<nav>
+  <a class="logo" href="#">
+    <div class="logo-icon">⚡</div>
+    IsthisAI
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">How it works</a></li>
+    <li><a href="#">About</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge"><span></span> AI Image Detection</div>
+  <h1>Is this image<br><em>made by AI?</em></h1>
+  <p class="hero-sub">Upload any image and find out instantly — our system will analyse it and show you the probability it was AI-generated.</p>
+</section>
+
+<!-- Card -->
+<div class="card-wrap">
+  <div class="card">
+
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*" />
+      <div class="drop-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="4"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </div>
+      <p class="drop-text">Drop an image here</p>
+      <p class="drop-sub">or click to browse &nbsp;·&nbsp; JPG, PNG, WEBP, GIF</p>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-wrap" id="previewWrap">
+      <img class="preview-img" id="previewImg" src="" alt="Preview" />
+      <div class="preview-overlay" id="previewOverlay">
+        <div class="result-ring" id="resultRing">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 90 90">
+              <circle class="ring-track" cx="45" cy="45" r="45"/>
+              <circle class="ring-fill" id="ringFill" cx="45" cy="45" r="45"/>
+            </svg>
+            <div class="ring-center">
+              <span class="ring-pct" id="ringPct">0</span>
+              <span class="ring-pct-unit">%</span>
+            </div>
+          </div>
+          <p class="result-verdict" id="resultVerdict"></p>
+          <p class="result-sub-text" id="resultSub"></p>
+        </div>
+        <p class="preview-label" id="previewLabel">Ready to analyse</p>
+      </div>
+      <button class="change-btn" id="changeBtn">Change image</button>
+    </div>
+
+    <!-- Analyse button -->
+    <button class="btn-analyse" id="analyseBtn" disabled>
+      <span class="btn-text">Analyse Image</span>
+      <div class="spinner"></div>
+    </button>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox"></div>
+
+  </div>
+</div>
+
+<footer>IsthisAI &copy; 2025</footer>
+
+<script>
+  const BACKEND = 'http://localhost:8000';
+
+  const fileInput      = document.getElementById('fileInput');
+  const dropZone       = document.getElementById('dropZone');
+  const previewWrap    = document.getElementById('previewWrap');
+  const previewImg     = document.getElementById('previewImg');
+  const previewLabel   = document.getElementById('previewLabel');
+  const changeBtn      = document.getElementById('changeBtn');
+  const analyseBtn     = document.getElementById('analyseBtn');
+  const resultRing     = document.getElementById('resultRing');
+  const ringFill       = document.getElementById('ringFill');
+  const ringPct        = document.getElementById('ringPct');
+  const resultVerdict  = document.getElementById('resultVerdict');
+  const resultSub      = document.getElementById('resultSub');
+  const errorBox       = document.getElementById('errorBox');
+
+  const CIRCUMFERENCE = 2 * Math.PI * 45; // r=45 → ~282.6
+  ringFill.style.strokeDasharray  = CIRCUMFERENCE;
+  ringFill.style.strokeDashoffset = CIRCUMFERENCE;
+
+  let selectedFile = null;
+
+  // ── Drag & drop ──
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) loadFile(f);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+  changeBtn.addEventListener('click', resetState);
+
+  function loadFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src = e.target.result;
+      previewImg.className = 'preview-img'; // blurred
+      dropZone.style.display = 'none';
+      previewWrap.classList.add('visible');
+      resultRing.classList.remove('visible');
+      previewLabel.style.display = '';
+      previewLabel.textContent = 'Ready to analyse';
+      ringPct.textContent = '0';
+      ringFill.style.strokeDashoffset = CIRCUMFERENCE;
+      analyseBtn.disabled = false;
+      hideError();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetState() {
+    selectedFile = null;
+    fileInput.value = '';
+    dropZone.style.display = '';
+    previewWrap.classList.remove('visible');
+    previewImg.src = '';
+    analyseBtn.disabled = true;
+    analyseBtn.classList.remove('loading');
+    hideError();
+  }
+
+  // ── Analyse ──
+  analyseBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    setLoading(true);
+    hideError();
+    previewLabel.textContent = 'Analysing…';
+    previewLabel.style.display = '';
+    resultRing.classList.remove('visible');
+
+    try {
+      const form = new FormData();
+      form.append('file', selectedFile, selectedFile.name);
+
+      const res = await fetch(`${BACKEND}/analyse`, { method: 'POST', body: form });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Server error ${res.status}`);
+      }
+
+      const { is_ai, ai_pct, verdict } = await res.json();
+      showResult(ai_pct, is_ai, verdict);
+
+    } catch (err) {
+      if (err instanceof TypeError) {
+        showError('Cannot connect to local server. Make sure the backend is running (uvicorn main:app).');
+      } else {
+        showError(err.message || 'Something went wrong.');
+      }
+      previewLabel.textContent = 'Analysis failed';
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  function showResult(pct, isAI, verdict) {
+    previewImg.classList.add('clear');
+    previewLabel.style.display = 'none';
+
+    const colour = isAI ? '#f87171' : '#2dd4bf';
+    ringFill.style.stroke = colour;
+
+    const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+    setTimeout(() => { ringFill.style.strokeDashoffset = offset; }, 50);
+
+    animateCount(0, pct, 1200, v => { ringPct.textContent = v; });
+
+    resultVerdict.textContent = verdict;
+    resultVerdict.className   = 'result-verdict ' + (isAI ? 'ai' : 'real');
+    resultSub.textContent     = isAI
+      ? 'This image shows signs of AI generation.'
+      : 'This image appears to be authentic.';
+
+    resultRing.classList.add('visible');
+  }
+
+  function animateCount(from, to, ms, cb) {
+    const start = performance.now();
+    (function step(now) {
+      const t = Math.min((now - start) / ms, 1);
+      cb(Math.round(from + (to - from) * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) requestAnimationFrame(step);
+    })(start);
+  }
+
+  function setLoading(on) {
+    analyseBtn.disabled = on;
+    analyseBtn.classList.toggle('loading', on);
+  }
+  function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); }
+  function hideError()    { errorBox.classList.remove('visible'); }
+</script>
+</body>
+</html>
