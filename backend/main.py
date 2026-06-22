@@ -22,7 +22,7 @@ app.add_middleware(
 @app.post("/analyse")
 async def analyse(file: UploadFile = File(...)):
     if not AIORNOT_API_KEY or AIORNOT_API_KEY.startswith("ใส่"):
-        raise HTTPException(status_code=500, detail="API key not configured in .env")
+        raise HTTPException(status_code=500, detail="Internal server error (configuration missing)")
 
     content = await file.read()
     if len(content) > 20 * 1024 * 1024:
@@ -37,9 +37,11 @@ async def analyse(file: UploadFile = File(...)):
             )
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail="Detection API error")
+            # ซ่อนว่ามีการเรียก API ออกไปข้างนอก
+            raise HTTPException(status_code=e.response.status_code, detail="Analysis failed. Please try again.")
         except httpx.RequestError:
-            raise HTTPException(status_code=502, detail="Cannot reach detection service")
+            # ซ่อนคำว่า detection service
+            raise HTTPException(status_code=502, detail="Analysis engine is currently offline. Please try again later.")
 
     data = resp.json()
     report = data.get("report", data)

@@ -698,7 +698,10 @@
 <footer>ISTHISAI © 2025</footer>
 
 <script>
-  const BACKEND = 'http://localhost:8000';
+  // กำหนด BACKEND ให้เปลี่ยนอัตโนมัติ (รันในเครื่องใช้ localhost, รันบน Vercel ใช้อัตโนมัติ)
+  const BACKEND = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:8000' 
+    : '';
 
   const fileInput      = document.getElementById('fileInput');
   const dropZone       = document.getElementById('dropZone');
