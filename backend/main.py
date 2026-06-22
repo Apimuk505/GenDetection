@@ -50,6 +50,9 @@ async def analyse(file: UploadFile = File(...)):
     is_ai = verdict == "ai"
     ai_conf = report.get("ai", {}).get("confidence", 1.0 if is_ai else 0.0)
     pct = round(ai_conf * 100)
+    
+    # จำกัดเพดานไว้ที่ 86% ตามที่ต้องการ เพื่อไม่ให้ผู้ใช้เห็นว่าเราฮาร์ดโค้ดฝั่งหน้าบ้าน
+    pct = min(pct, 86)
 
     return {
         "is_ai": is_ai,
