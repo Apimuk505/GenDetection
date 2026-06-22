@@ -598,6 +598,28 @@
     }
     .error-box.visible { display: block; }
 
+    /* ── Bottom Change Button ── */
+    .btn-change-bottom {
+      display: none;
+      width: 100%;
+      margin-top: 12px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      color: var(--text-dim);
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-change-bottom:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     /* ── Footer ── */
     footer {
       position: relative;
@@ -910,6 +932,9 @@
       <div class="spinner"></div>
     </button>
 
+    <!-- Bottom Change button -->
+    <button class="btn-change-bottom" id="changeBtnBottom">Change Image</button>
+
     <!-- Error -->
     <div class="error-box" id="errorBox"></div>
 
@@ -941,6 +966,7 @@
   const previewImg     = document.getElementById('previewImg');
   const previewLabel   = document.getElementById('previewLabel');
   const changeBtn      = document.getElementById('changeBtn');
+  const changeBtnBottom = document.getElementById('changeBtnBottom');
   const analyseBtn     = document.getElementById('analyseBtn');
   const resultRing     = document.getElementById('resultRing');
   const ringFill       = document.getElementById('ringFill');
@@ -966,6 +992,7 @@
   });
   fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
   changeBtn.addEventListener('click', resetState);
+  changeBtnBottom.addEventListener('click', resetState);
 
   function loadFile(file) {
     selectedFile = file;
@@ -993,6 +1020,8 @@
     dropZone.style.display = '';
     previewWrap.classList.remove('visible', 'scanning');
     previewImg.src = '';
+    analyseBtn.style.display = '';
+    changeBtnBottom.style.display = 'none';
     analyseBtn.disabled = true;
     analyseBtn.classList.remove('loading');
     document.body.classList.remove('theme-ai');
@@ -1053,10 +1082,11 @@
   }
 
   function showResultRing(pct, isAI, verdict) {
-    const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+    const displayPct = isAI ? pct : 100 - pct;
+    const offset = CIRCUMFERENCE - (displayPct / 100) * CIRCUMFERENCE;
     setTimeout(() => { ringFill.style.strokeDashoffset = offset; }, 50);
 
-    animateCount(0, pct, 1200, v => { ringPct.textContent = v; });
+    animateCount(0, displayPct, 1200, v => { ringPct.textContent = v; });
 
     resultVerdict.textContent = verdict;
     resultVerdict.className   = 'result-verdict ' + (isAI ? 'ai' : 'real');
@@ -1065,6 +1095,9 @@
       : 'This image appears to be authentic.';
 
     resultRing.classList.add('visible');
+
+    analyseBtn.style.display = 'none';
+    changeBtnBottom.style.display = 'block';
   }
 
   // ═══ Detection Circle Reveal Animation ═══

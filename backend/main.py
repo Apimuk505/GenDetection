@@ -54,7 +54,6 @@ async def analyse(file: UploadFile = File(...)):
 
     ran = random.randint(10,20)
     pct = min(pct, 70+70*(ran / 100))
-
     return {
         "is_ai": is_ai,
         "ai_pct": pct,
