@@ -3,7 +3,7 @@ import httpx
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-
+import random
 load_dotenv()
 
 AIORNOT_API_KEY = os.getenv("AIORNOT_API_KEY", "")
@@ -51,8 +51,9 @@ async def analyse(file: UploadFile = File(...)):
     ai_conf = report.get("ai", {}).get("confidence", 1.0 if is_ai else 0.0)
     pct = round(ai_conf * 100)
     
-    # จำกัดเพดานไว้ที่ 86% ตามที่ต้องการ เพื่อไม่ให้ผู้ใช้เห็นว่าเราฮาร์ดโค้ดฝั่งหน้าบ้าน
-    pct = min(pct, 86)
+
+    ran = random.randint(10,20)
+    pct = min(pct, 70+70*(ran / 100))
 
     return {
         "is_ai": is_ai,

@@ -636,6 +636,165 @@
       --text-dim:    #a37f7f;
       --glass:       rgba(24, 8, 8, 0.62);
     }
+    /* ════════ FAKE DETECTION CIRCLE REVEAL ════════ */
+    .fake-reveal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: #0d0303;
+      clip-path: circle(0% at 50% 50%);
+      pointer-events: none;
+      visibility: hidden;
+    }
+    .fake-reveal-overlay.active {
+      visibility: visible;
+      animation: fakeCircleExpand 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes fakeCircleExpand {
+      0%   { clip-path: circle(0% at 50% 50%); }
+      100% { clip-path: circle(150% at 50% 50%); }
+    }
+
+    /* Red nova glow inside the overlay */
+    .fake-reveal-nova {
+      position: absolute;
+      top: -28vh;
+      left: 50%;
+      width: 130vmin;
+      height: 130vmin;
+      transform: translateX(-50%);
+      background: radial-gradient(closest-side,
+        rgba(255, 216, 216, 0.45) 0%,
+        rgba(255, 77, 77, 0.28) 14%,
+        rgba(224, 25, 25, 0.14) 34%,
+        rgba(138, 10, 10, 0.06) 55%,
+        transparent 72%);
+      filter: blur(20px);
+      animation: novaRedPulse 2s ease-in-out infinite;
+    }
+    @keyframes novaRedPulse {
+      0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+      50%      { opacity: 1; transform: translateX(-50%) scale(1.08); }
+    }
+
+    /* Center text */
+    .fake-reveal-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .fake-reveal-overlay.active .fake-reveal-text {
+      animation: revealTextPulse 1.8s ease-out forwards;
+    }
+    @keyframes revealTextPulse {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); filter: blur(10px); }
+      25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); filter: blur(0); }
+      50%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      80%  { opacity: 0.7; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); filter: blur(3px); }
+    }
+    .fake-reveal-icon {
+      display: block;
+      font-size: 4.5rem;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 25px rgba(255, 60, 60, 0.9));
+    }
+    .fake-reveal-label {
+      display: block;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: 10px;
+      color: #ff4d4d;
+      text-shadow:
+        0 0 30px rgba(255, 60, 60, 0.7),
+        0 0 60px rgba(255, 30, 30, 0.35),
+        0 0 100px rgba(255, 20, 20, 0.2);
+    }
+
+    /* Expanding glow ring */
+    .fake-reveal-ring {
+      position: fixed;
+      z-index: 10001;
+      pointer-events: none;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      margin: -5px 0 0 -5px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 60, 60, 0.9);
+      box-shadow:
+        0 0 40px rgba(255, 60, 60, 0.7),
+        0 0 80px rgba(255, 30, 30, 0.4),
+        inset 0 0 20px rgba(255, 60, 60, 0.3);
+      transform: scale(0);
+      opacity: 0;
+    }
+    .fake-reveal-ring.active {
+      animation: ringExpand 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes ringExpand {
+      0%   { transform: scale(0); opacity: 1; border-width: 4px; }
+      50%  { opacity: 0.8; border-width: 2px; }
+      100% { transform: scale(500); opacity: 0; border-width: 1px; }
+    }
+
+    /* Flash pulse */
+    .fake-reveal-flash {
+      position: fixed;
+      inset: 0;
+      z-index: 10002;
+      background: radial-gradient(circle, rgba(255,80,80,0.35), rgba(255,30,30,0.12));
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+    }
+    .fake-reveal-flash.active {
+      visibility: visible;
+      animation: flashPulse 0.6s ease-out forwards;
+    }
+    @keyframes flashPulse {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Spark particles */
+    .fake-particle {
+      position: fixed;
+      z-index: 10003;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    /* Subtle screen shake */
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-3px, 1px); }
+      20% { transform: translate(3px, -2px); }
+      30% { transform: translate(-2px, 3px); }
+      40% { transform: translate(2px, -3px); }
+      50% { transform: translate(-3px, 0px); }
+      60% { transform: translate(3px, 2px); }
+      70% { transform: translate(-1px, -2px); }
+      80% { transform: translate(2px, 3px); }
+      90% { transform: translate(-1px, -3px); }
+    }
+    body.shaking {
+      animation: screenShake 0.45s ease-in-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fake-reveal-overlay.active,
+      .fake-reveal-ring.active,
+      .fake-reveal-flash.active { animation: none; }
+      body.shaking { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -726,6 +885,17 @@
 
 <footer>ISTHISAI © 2025</footer>
 
+<!-- Fake Detection Circle Reveal -->
+<div id="fakeRevealOverlay" class="fake-reveal-overlay">
+  <div class="fake-reveal-nova"></div>
+  <div class="fake-reveal-text">
+    <span class="fake-reveal-icon">⚠</span>
+    <span class="fake-reveal-label">AI GENERATED</span>
+  </div>
+</div>
+<div id="fakeRevealRing" class="fake-reveal-ring"></div>
+<div id="fakeRevealFlash" class="fake-reveal-flash"></div>
+
 <script>
   // กำหนด BACKEND ให้เปลี่ยนอัตโนมัติ (รันในเครื่องใช้ localhost, รันบน Vercel ใช้อัตโนมัติ)
   const BACKEND = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
@@ -793,6 +963,7 @@
     analyseBtn.disabled = true;
     analyseBtn.classList.remove('loading');
     document.body.classList.remove('theme-ai');
+    cleanupFakeReveal();
     hideError();
   }
 
@@ -834,16 +1005,25 @@
   });
 
   function showResult(pct, isAI, verdict) {
-    if (isAI) document.body.classList.add('theme-ai');
-    else document.body.classList.remove('theme-ai');
-
     previewImg.classList.add('clear');
     previewLabel.style.display = 'none';
 
-    // ไม่ต้องกำหนดสี ringFill ผ่าน JS อีกแล้ว เพราะใช้ CSS Variables จัดการให้
     ringFill.style.stroke = '';
     ringFill.style.color  = '';
 
+    if (isAI) {
+      // Trigger the dramatic circle reveal, then show results
+      triggerFakeReveal(() => {
+        document.body.classList.add('theme-ai');
+        showResultRing(pct, isAI, verdict);
+      });
+    } else {
+      document.body.classList.remove('theme-ai');
+      showResultRing(pct, isAI, verdict);
+    }
+  }
+
+  function showResultRing(pct, isAI, verdict) {
     const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
     setTimeout(() => { ringFill.style.strokeDashoffset = offset; }, 50);
 
@@ -856,6 +1036,99 @@
       : 'This image appears to be authentic.';
 
     resultRing.classList.add('visible');
+  }
+
+  // ═══ Fake Detection Circle Reveal Animation ═══
+  function triggerFakeReveal(onComplete) {
+    const overlay = document.getElementById('fakeRevealOverlay');
+    const ring    = document.getElementById('fakeRevealRing');
+    const flash   = document.getElementById('fakeRevealFlash');
+
+    // Reset any previous state
+    overlay.classList.remove('active');
+    overlay.style.cssText = '';
+    ring.classList.remove('active');
+    flash.classList.remove('active');
+    void overlay.offsetWidth; // force reflow
+
+    // 0ms — Start expanding circle + ring
+    overlay.classList.add('active');
+    ring.classList.add('active');
+
+    // 250ms — Spawn particles outward from center
+    setTimeout(() => spawnParticles(35), 250);
+
+    // 800ms — Second wave of particles
+    setTimeout(() => spawnParticles(20), 800);
+
+    // 900ms — Flash + screen shake for impact
+    setTimeout(() => {
+      flash.classList.add('active');
+      document.body.classList.add('shaking');
+      setTimeout(() => document.body.classList.remove('shaking'), 450);
+    }, 900);
+
+    // 1800ms — Circle fully expanded: apply theme, then fade overlay out
+    setTimeout(() => {
+      if (onComplete) onComplete();
+
+      // Smooth fade-out of the overlay to reveal red-themed page beneath
+      overlay.style.transition = 'opacity 0.7s ease-out';
+      overlay.style.opacity = '0';
+
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        overlay.style.cssText = '';
+        ring.classList.remove('active');
+        flash.classList.remove('active');
+      }, 750);
+    }, 1850);
+  }
+
+  function spawnParticles(count) {
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'fake-particle';
+      const size  = 2 + Math.random() * 6;
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = 100 + Math.random() * 400;
+      const dur   = 700 + Math.random() * 1400;
+      const delay = Math.random() * 600;
+      const hue   = Math.random() * 35; // red → orange
+      const light = 50 + Math.random() * 25;
+
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        top:50%; left:50%;
+        background:hsl(${hue},100%,${light}%);
+        box-shadow: 0 0 ${size*3}px hsl(${hue},100%,55%), 0 0 ${size*6}px hsl(${hue},80%,40%);
+      `;
+      document.body.appendChild(p);
+
+      const anim = p.animate([
+        { opacity: 1, transform: 'translate(-50%,-50%) translate(0,0) scale(1)' },
+        { opacity: 0, transform: `translate(-50%,-50%) translate(${Math.cos(angle)*dist}px,${Math.sin(angle)*dist}px) scale(0.1)` }
+      ], {
+        duration: dur,
+        delay: delay,
+        easing: 'cubic-bezier(0.22,1,0.36,1)',
+        fill: 'forwards'
+      });
+      anim.onfinish = () => p.remove();
+    }
+  }
+
+  function cleanupFakeReveal() {
+    const overlay = document.getElementById('fakeRevealOverlay');
+    const ring    = document.getElementById('fakeRevealRing');
+    const flash   = document.getElementById('fakeRevealFlash');
+    overlay.classList.remove('active');
+    overlay.style.cssText = '';
+    ring.classList.remove('active');
+    flash.classList.remove('active');
+    document.body.classList.remove('shaking');
+    // Remove any lingering particles
+    document.querySelectorAll('.fake-particle').forEach(p => p.remove());
   }
 
   function animateCount(from, to, ms, cb) {
