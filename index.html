@@ -409,11 +409,11 @@
       max-height: 330px;
       object-fit: cover;
       display: block;
-      filter: blur(16px) brightness(0.55) saturate(1.1);
+      filter: hue-rotate(0deg) blur(16px) brightness(0.55) saturate(1.1);
       transform: scale(1.07);
       transition: filter 0.7s ease, transform 0.7s ease;
     }
-    .preview-img.clear { filter: none; transform: scale(1); }
+    .preview-img.clear { filter: hue-rotate(0deg); transform: scale(1); }
 
     /* scanning beam shown while analysing */
     .scan-beam {
@@ -607,6 +607,26 @@
       .card { padding: 24px; }
       .hero { padding-top: 44px; }
     }
+
+    /* ════════ AI RED THEME ════════ */
+    .nova-field, .brand, .slogan, h1 em, .card {
+      transition: filter 1s ease-in-out;
+    }
+    body.theme-ai .nova-field,
+    body.theme-ai .brand,
+    body.theme-ai .slogan,
+    body.theme-ai h1 em,
+    body.theme-ai .card {
+      /* Rotate green (~140deg) into red (~360deg/0deg) */
+      filter: hue-rotate(220deg);
+    }
+    /* Undo the hue-rotate on the preview image itself so user's image colors are normal */
+    body.theme-ai .preview-img {
+      filter: hue-rotate(-220deg) blur(16px) brightness(0.55) saturate(1.1);
+    }
+    body.theme-ai .preview-img.clear {
+      filter: hue-rotate(-220deg);
+    }
   </style>
 </head>
 <body>
@@ -763,6 +783,7 @@
     previewImg.src = '';
     analyseBtn.disabled = true;
     analyseBtn.classList.remove('loading');
+    document.body.classList.remove('theme-ai');
     hideError();
   }
 
@@ -804,12 +825,16 @@
   });
 
   function showResult(pct, isAI, verdict) {
+    if (isAI) document.body.classList.add('theme-ai');
+    else document.body.classList.remove('theme-ai');
+
     previewImg.classList.add('clear');
     previewLabel.style.display = 'none';
 
-    const colour = isAI ? '#ff7a6e' : '#4dff9e';
+    // สีตั้งต้นเป็นสีเขียวเสมอ หากเป็น AI คลาส theme-ai (hue-rotate) จะเปลี่ยนให้กลายเป็นสีแดงเอง!
+    const colour = '#4dff9e';
     ringFill.style.stroke = colour;
-    ringFill.style.color  = colour; // for drop-shadow glow
+    ringFill.style.color  = colour;
 
     const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
     setTimeout(() => { ringFill.style.strokeDashoffset = offset; }, 50);
@@ -817,7 +842,7 @@
     animateCount(0, pct, 1200, v => { ringPct.textContent = v; });
 
     resultVerdict.textContent = verdict;
-    resultVerdict.className   = 'result-verdict ' + (isAI ? 'ai' : 'real');
+    resultVerdict.className   = 'result-verdict real'; // สีตั้งต้นเป็นเขียวเสมอ (hue-rotate จัดการเรื่องเปลี่ยนเป็นแดงให้)
     resultSub.textContent     = isAI
       ? 'This image shows signs of AI generation.'
       : 'This image appears to be authentic.';
