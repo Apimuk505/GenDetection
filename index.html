@@ -795,6 +795,39 @@
       .fake-reveal-flash.active { animation: none; }
       body.shaking { animation: none; }
     }
+
+    /* ════════ REAL (AUTHENTIC) MODE — GREEN OVERRIDES ════════ */
+    .fake-reveal-overlay.real-mode {
+      background: #030d09;
+    }
+    .fake-reveal-overlay.real-mode .fake-reveal-nova {
+      background: radial-gradient(closest-side,
+        rgba(216, 255, 233, 0.5) 0%,
+        rgba(77, 255, 158, 0.3) 14%,
+        rgba(25, 224, 122, 0.15) 34%,
+        rgba(10, 138, 77, 0.06) 55%,
+        transparent 72%);
+    }
+    .fake-reveal-overlay.real-mode .fake-reveal-icon {
+      filter: drop-shadow(0 0 25px rgba(77, 255, 158, 0.9));
+    }
+    .fake-reveal-overlay.real-mode .fake-reveal-label {
+      color: #4dff9e;
+      text-shadow:
+        0 0 30px rgba(77, 255, 158, 0.7),
+        0 0 60px rgba(25, 224, 122, 0.35),
+        0 0 100px rgba(10, 138, 77, 0.2);
+    }
+    .fake-reveal-ring.real-mode {
+      border-color: rgba(77, 255, 158, 0.9);
+      box-shadow:
+        0 0 40px rgba(77, 255, 158, 0.7),
+        0 0 80px rgba(25, 224, 122, 0.4),
+        inset 0 0 20px rgba(77, 255, 158, 0.3);
+    }
+    .fake-reveal-flash.real-mode {
+      background: radial-gradient(circle, rgba(77, 255, 158, 0.3), rgba(25, 224, 122, 0.1));
+    }
   </style>
 </head>
 <body>
@@ -885,16 +918,16 @@
 
 <footer>ISTHISAI © 2025</footer>
 
-<!-- Fake Detection Circle Reveal -->
-<div id="fakeRevealOverlay" class="fake-reveal-overlay">
+<!-- Detection Circle Reveal -->
+<div id="revealOverlay" class="fake-reveal-overlay">
   <div class="fake-reveal-nova"></div>
   <div class="fake-reveal-text">
-    <span class="fake-reveal-icon">⚠</span>
-    <span class="fake-reveal-label">AI GENERATED</span>
+    <span class="fake-reveal-icon" id="revealIcon">⚠</span>
+    <span class="fake-reveal-label" id="revealLabel">AI GENERATED</span>
   </div>
 </div>
-<div id="fakeRevealRing" class="fake-reveal-ring"></div>
-<div id="fakeRevealFlash" class="fake-reveal-flash"></div>
+<div id="revealRing" class="fake-reveal-ring"></div>
+<div id="revealFlash" class="fake-reveal-flash"></div>
 
 <script>
   // กำหนด BACKEND ให้เปลี่ยนอัตโนมัติ (รันในเครื่องใช้ localhost, รันบน Vercel ใช้อัตโนมัติ)
@@ -1011,16 +1044,12 @@
     ringFill.style.stroke = '';
     ringFill.style.color  = '';
 
-    if (isAI) {
-      // Trigger the dramatic circle reveal, then show results
-      triggerFakeReveal(() => {
-        document.body.classList.add('theme-ai');
-        showResultRing(pct, isAI, verdict);
-      });
-    } else {
-      document.body.classList.remove('theme-ai');
+    // Trigger the dramatic circle reveal for BOTH results
+    triggerReveal(isAI, () => {
+      if (isAI) document.body.classList.add('theme-ai');
+      else document.body.classList.remove('theme-ai');
       showResultRing(pct, isAI, verdict);
-    }
+    });
   }
 
   function showResultRing(pct, isAI, verdict) {
@@ -1038,28 +1067,42 @@
     resultRing.classList.add('visible');
   }
 
-  // ═══ Fake Detection Circle Reveal Animation ═══
-  function triggerFakeReveal(onComplete) {
-    const overlay = document.getElementById('fakeRevealOverlay');
-    const ring    = document.getElementById('fakeRevealRing');
-    const flash   = document.getElementById('fakeRevealFlash');
+  // ═══ Detection Circle Reveal Animation ═══
+  function triggerReveal(isAI, onComplete) {
+    const overlay = document.getElementById('revealOverlay');
+    const ring    = document.getElementById('revealRing');
+    const flash   = document.getElementById('revealFlash');
+    const icon    = document.getElementById('revealIcon');
+    const label   = document.getElementById('revealLabel');
 
     // Reset any previous state
-    overlay.classList.remove('active');
+    overlay.classList.remove('active', 'real-mode');
     overlay.style.cssText = '';
-    ring.classList.remove('active');
-    flash.classList.remove('active');
+    ring.classList.remove('active', 'real-mode');
+    flash.classList.remove('active', 'real-mode');
     void overlay.offsetWidth; // force reflow
+
+    // Set mode: red (fake) or green (real)
+    if (!isAI) {
+      overlay.classList.add('real-mode');
+      ring.classList.add('real-mode');
+      flash.classList.add('real-mode');
+      icon.textContent  = '✔';
+      label.textContent = 'AUTHENTIC';
+    } else {
+      icon.textContent  = '⚠';
+      label.textContent = 'AI GENERATED';
+    }
 
     // 0ms — Start expanding circle + ring
     overlay.classList.add('active');
     ring.classList.add('active');
 
     // 250ms — Spawn particles outward from center
-    setTimeout(() => spawnParticles(35), 250);
+    setTimeout(() => spawnParticles(35, isAI), 250);
 
     // 800ms — Second wave of particles
-    setTimeout(() => spawnParticles(20), 800);
+    setTimeout(() => spawnParticles(20, isAI), 800);
 
     // 900ms — Flash + screen shake for impact
     setTimeout(() => {
@@ -1068,24 +1111,28 @@
       setTimeout(() => document.body.classList.remove('shaking'), 450);
     }, 900);
 
-    // 1800ms — Circle fully expanded: apply theme, then fade overlay out
+    // 1850ms — Circle fully expanded: apply theme, then fade overlay out
     setTimeout(() => {
       if (onComplete) onComplete();
 
-      // Smooth fade-out of the overlay to reveal red-themed page beneath
+      // Smooth fade-out of the overlay to reveal themed page beneath
       overlay.style.transition = 'opacity 0.7s ease-out';
       overlay.style.opacity = '0';
 
       setTimeout(() => {
-        overlay.classList.remove('active');
+        overlay.classList.remove('active', 'real-mode');
         overlay.style.cssText = '';
-        ring.classList.remove('active');
-        flash.classList.remove('active');
+        ring.classList.remove('active', 'real-mode');
+        flash.classList.remove('active', 'real-mode');
       }, 750);
     }, 1850);
   }
 
-  function spawnParticles(count) {
+  function spawnParticles(count, isAI) {
+    // Fake: red→orange hues (0-35) | Real: green→cyan hues (100-160)
+    const hueMin   = isAI ? 0 : 100;
+    const hueRange = isAI ? 35 : 60;
+
     for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'fake-particle';
@@ -1094,7 +1141,7 @@
       const dist  = 100 + Math.random() * 400;
       const dur   = 700 + Math.random() * 1400;
       const delay = Math.random() * 600;
-      const hue   = Math.random() * 35; // red → orange
+      const hue   = hueMin + Math.random() * hueRange;
       const light = 50 + Math.random() * 25;
 
       p.style.cssText = `
@@ -1119,13 +1166,13 @@
   }
 
   function cleanupFakeReveal() {
-    const overlay = document.getElementById('fakeRevealOverlay');
-    const ring    = document.getElementById('fakeRevealRing');
-    const flash   = document.getElementById('fakeRevealFlash');
-    overlay.classList.remove('active');
+    const overlay = document.getElementById('revealOverlay');
+    const ring    = document.getElementById('revealRing');
+    const flash   = document.getElementById('revealFlash');
+    overlay.classList.remove('active', 'real-mode');
     overlay.style.cssText = '';
-    ring.classList.remove('active');
-    flash.classList.remove('active');
+    ring.classList.remove('active', 'real-mode');
+    flash.classList.remove('active', 'real-mode');
     document.body.classList.remove('shaking');
     // Remove any lingering particles
     document.querySelectorAll('.fake-particle').forEach(p => p.remove());
