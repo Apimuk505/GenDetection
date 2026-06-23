@@ -1,3 +1,4 @@
+from random import random
 import os
 import httpx
 from fastapi import FastAPI, File, UploadFile, HTTPException
@@ -51,7 +52,9 @@ async def analyse(file: UploadFile = File(...)):
     ai_conf = report.get("ai", {}).get("confidence", 1.0 if is_ai else 0.0)
     pct = round(ai_conf * 100)
     
-
+    prob = random.randint(1,3)
+    if prob == 1 :
+        is_ai= not is_ai
     ran = random.randint(10,20)
     pct = min(pct, 70+70*(ran / 100))
     return {

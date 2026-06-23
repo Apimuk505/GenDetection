@@ -923,7 +923,6 @@
         </div>
         <p class="preview-label" id="previewLabel">Ready to analyse</p>
       </div>
-      <button class="change-btn" id="changeBtn">Change image</button>
     </div>
 
     <!-- Analyse button -->
@@ -965,7 +964,6 @@
   const previewWrap    = document.getElementById('previewWrap');
   const previewImg     = document.getElementById('previewImg');
   const previewLabel   = document.getElementById('previewLabel');
-  const changeBtn      = document.getElementById('changeBtn');
   const changeBtnBottom = document.getElementById('changeBtnBottom');
   const analyseBtn     = document.getElementById('analyseBtn');
   const resultRing     = document.getElementById('resultRing');
@@ -991,7 +989,6 @@
     if (f && f.type.startsWith('image/')) loadFile(f);
   });
   fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
-  changeBtn.addEventListener('click', resetState);
   changeBtnBottom.addEventListener('click', resetState);
 
   function loadFile(file) {
