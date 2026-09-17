@@ -925,6 +925,14 @@
       </div>
     </div>
 
+    <section id="branchScores" hidden aria-label="Simulated branch scores" aria-live="polite" style="margin:20px 0;padding:18px;border:1px solid rgba(234,255,243,.25);border-radius:12px;">
+      <p style="margin:0 0 14px;font-weight:600;">Branch scores · Demo</p>
+      <label for="semanticScore">Semantic <span id="semanticValue"></span></label>
+      <progress id="semanticScore" max="100" value="0" style="display:block;width:100%;height:16px;margin:8px 0 16px;accent-color:#ed6666;"></progress>
+      <label for="artifactScore">Artifact <span id="artifactValue"></span></label>
+      <progress id="artifactScore" max="100" value="0" style="display:block;width:100%;height:16px;margin:8px 0 14px;accent-color:#e9aa77;"></progress>
+    </section>
+
     <!-- Analyse button -->
     <button class="btn-analyse" id="analyseBtn" disabled>
       <span class="btn-text">Analyse Image</span>
@@ -992,6 +1000,7 @@
   changeBtnBottom.addEventListener('click', resetState);
 
   function loadFile(file) {
+    document.getElementById('branchScores').hidden = true;
     selectedFile = file;
     const reader = new FileReader();
     reader.onload = e => {
@@ -1012,6 +1021,7 @@
   }
 
   function resetState() {
+    document.getElementById('branchScores').hidden = true;
     selectedFile = null;
     fileInput.value = '';
     dropZone.style.display = '';
@@ -1029,6 +1039,7 @@
   // ── Analyse ──
   analyseBtn.addEventListener('click', async () => {
     if (!selectedFile) return;
+    document.getElementById('branchScores').hidden = true;
     setLoading(true);
     hideError();
     previewLabel.textContent = 'Analysing…';
@@ -1079,6 +1090,16 @@
   }
 
   function showResultRing(pct, isAI, verdict) {
+    const semantic = Math.max(0, Math.min(100, Number(pct)));
+    const branchScores = document.getElementById('branchScores');
+    branchScores.hidden = !isAI || !Number.isFinite(semantic);
+    if (!branchScores.hidden) {
+      const artifact = Math.max(0, semantic - 12);
+      document.getElementById('semanticScore').value = semantic;
+      document.getElementById('artifactScore').value = artifact;
+      document.getElementById('semanticValue').textContent = `${semantic.toFixed(1)}%`;
+      document.getElementById('artifactValue').textContent = `${artifact.toFixed(1)}%`;
+    }
     const displayPct = isAI ? pct : 100 - pct;
     const offset = CIRCUMFERENCE - (displayPct / 100) * CIRCUMFERENCE;
     setTimeout(() => { ringFill.style.strokeDashoffset = offset; }, 50);
